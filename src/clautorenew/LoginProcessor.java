@@ -32,6 +32,7 @@ import org.apache.http.util.EntityUtils;
  * @author Hermoine
  */
 public class LoginProcessor {
+    private static boolean wasRedirected = false;
     public static boolean doLogin(String email, String password) throws UnsupportedEncodingException, IOException{
         DefaultHttpClient  httpclient = new DefaultHttpClient();
         httpclient.setRedirectStrategy(new DefaultRedirectStrategy() {                
@@ -40,6 +41,7 @@ public class LoginProcessor {
                 boolean isRedirect=false;
                 try {
                     isRedirect = super.isRedirected(request, response, context);
+                    
                 } catch (ProtocolException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -47,6 +49,7 @@ public class LoginProcessor {
                 if (!isRedirect) {
                     int responseCode = response.getStatusLine().getStatusCode();
                     if (responseCode == 301 || responseCode == 302) {
+                        wasRedirected = true;
                         return true;
                     }
                 }
@@ -66,9 +69,8 @@ public class LoginProcessor {
         HttpResponse response = httpclient.execute(httpost, localContext);
         
         int status = response.getStatusLine().getStatusCode();
-        Header redirectHeader = response.getFirstHeader("Location");
         
-        if(redirectHeader ==null || status !=200){
+        if(!wasRedirected){
             return false;
         }
         
@@ -89,7 +91,7 @@ public class LoginProcessor {
         EntityUtils.consume(entity);
         
         System.out.println("Done");
-        return false;
+        return true;
         
     }
 }

@@ -5,7 +5,6 @@
 package clautorenew;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.logging.Level;
@@ -19,6 +18,7 @@ import org.jsoup.select.Elements;
  *
  * @author Hermoine
  */
+
 public class AdsStore {
     private String html;
     private static AdsStore inst;

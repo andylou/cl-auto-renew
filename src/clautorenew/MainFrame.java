@@ -11,6 +11,10 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.*;
 import net.miginfocom.swing.MigLayout;
 
@@ -20,6 +24,7 @@ import net.miginfocom.swing.MigLayout;
  */
 public class MainFrame extends JFrame {
     private JPanel c_panel;
+    DefaultListModel<Ad> adModel = new DefaultListModel();
     public MainFrame(){
         
         
@@ -44,10 +49,17 @@ public class MainFrame extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
         
-        JList listview = new JList(new String[]{"Listing 1","Listing 2","Listing 3"});
+        AdsStore store = AdsStore.getInstance();
+        
+        for(Ad ad: store.getListings()){
+            adModel.addElement(ad);
+            
+        }
+        
+        JList listview = new JList(adModel);
         listview.setSelectionBackground(Color.red);
         listview.setFixedCellHeight(30);
-        
+        listview.setCellRenderer(new AdListRenderer());
         panel.add(new JScrollPane(listview));
         
         
@@ -76,10 +88,12 @@ public class MainFrame extends JFrame {
         
         JButton repostbtn = new JButton("Repost");
         JButton renewbtn = new JButton("Renew");
+        JButton renewallbtn = new JButton("Renew All");
         JButton deletebtn = new JButton("Delete");
         
         opanel.add(repostbtn);
         opanel.add(renewbtn);
+        opanel.add(renewallbtn);
         opanel.add(deletebtn);
         
         
@@ -92,12 +106,12 @@ public class MainFrame extends JFrame {
         panel.setLayout(new MigLayout("wrap 2"));
         
         JLabel emaillabel = new JLabel("Email");
-        JTextField emailfield = new JTextField(20);
+        final JTextField emailfield = new JTextField(20);
             
         JLabel passlabel = new JLabel("Password");
-        JPasswordField passfield = new JPasswordField(20);
+        final JPasswordField passfield = new JPasswordField(20);
         
-        JLabel errlbl = new JLabel("Error");
+        final JLabel errlbl = new JLabel("");
         errlbl.setForeground(Color.red);
         
         JButton loginbtn = new JButton("Login");
@@ -105,13 +119,27 @@ public class MainFrame extends JFrame {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                c_panel.removeAll();
-                c_panel.validate();
-                
-                c_panel.add(showListings());
-                c_panel.add(createButtonPanel(),"South");
-                
-                c_panel.validate();
+                try {
+                    String email = emailfield.getText();
+                    String password = new String(passfield.getPassword());
+                    if(LoginProcessor.doLogin(email, password)){
+                        System.out.println("got here");
+                        c_panel.removeAll();
+                        c_panel.validate();
+
+                        c_panel.add(showListings());
+                        c_panel.add(createButtonPanel(),"South");
+
+                        c_panel.validate();
+                        MainFrame.this.repaint();
+                    }else{
+                        errlbl.setText("Invalid Username or password");
+                    }
+                } catch (UnsupportedEncodingException ex) {
+                    Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (IOException ex) {
+                    Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+                }
                 
             }
         
@@ -131,12 +159,6 @@ public class MainFrame extends JFrame {
         
         return panel;
     }
-    public JPanel showButtonPanel(){
-        JPanel panel = new JPanel();
-        //panel.set
-        return panel;
-    }
-    
     
     public static void main(String args[]){
         new MainFrame();
