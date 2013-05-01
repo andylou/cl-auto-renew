@@ -20,6 +20,6 @@ final public class CLAutoRenew {
     public static void main(String[] args) {
        // new HttpClientDemo();
         
-        new ConnectionMain();
+        new MainFrame();
     }
 }
