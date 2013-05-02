@@ -33,7 +33,7 @@ public class AdListRenderer implements ListCellRenderer<Ad>{
                 .append("<small>")
                 .append(value.getStatus())
                 .append("</small>")
-                .append("</div><hr></html>");
+                .append("</div></html>");
         renderer.setText(sb.toString());
 
         return renderer;
