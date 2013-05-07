@@ -9,16 +9,12 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.ProtocolException;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
@@ -68,8 +64,6 @@ public class LoginProcessor {
         HttpContext localContext = new BasicHttpContext();
         HttpResponse response = httpclient.execute(httpost, localContext);
         
-        int status = response.getStatusLine().getStatusCode();
-        
         if(!wasRedirected){
             return false;
         }
@@ -87,10 +81,13 @@ public class LoginProcessor {
         
         AdsStore store = AdsStore.getInstance();
         store.setHtml(sb.toString());
+        store.setCookeiestore(httpclient.getCookieStore());
         
         EntityUtils.consume(entity);
         
         System.out.println("Done");
+        
+        httpclient.getConnectionManager().shutdown();
         return true;
         
     }

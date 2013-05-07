@@ -13,6 +13,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
@@ -25,6 +26,7 @@ import net.miginfocom.swing.MigLayout;
 public class MainFrame extends JFrame {
     private JPanel c_panel;
     DefaultListModel<Ad> adModel = new DefaultListModel();
+    private AdsStore store;
     public MainFrame(){
         
         
@@ -48,20 +50,18 @@ public class MainFrame extends JFrame {
     public JPanel showListings(){
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
-        
-        AdsStore store = AdsStore.getInstance();
+        store = AdsStore.getInstance();
         
         for(Ad ad: store.getListings()){
             adModel.addElement(ad);
-            
         }
-        
+        store.setListView(adModel);
+
         JList listview = new JList(adModel);
         listview.setSelectionBackground(Color.red);
         listview.setFixedCellHeight(30);
         listview.setCellRenderer(new AdListRenderer());
         panel.add(new JScrollPane(listview));
-        
         
         return panel;
     }
@@ -79,7 +79,6 @@ public class MainFrame extends JFrame {
         panel.setBackground(Color.white);
         return panel;
         
-        
     }
     public JPanel createButtonPanel(){
         JPanel opanel = new JPanel();
@@ -89,6 +88,13 @@ public class MainFrame extends JFrame {
         JButton repostbtn = new JButton("Repost");
         JButton renewbtn = new JButton("Renew");
         JButton renewallbtn = new JButton("Renew All");
+        renewallbtn.addActionListener(new ActionListener() {
+
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                doRenew();
+            }
+        });
         JButton deletebtn = new JButton("Delete");
         
         opanel.add(repostbtn);
@@ -123,7 +129,7 @@ public class MainFrame extends JFrame {
                     String email = emailfield.getText();
                     String password = new String(passfield.getPassword());
                     if(LoginProcessor.doLogin(email, password)){
-                        System.out.println("got here");
+                        //System.out.println("got here");
                         c_panel.removeAll();
                         c_panel.validate();
 
@@ -159,6 +165,49 @@ public class MainFrame extends JFrame {
         
         return panel;
     }
+    
+    public void doRenew(){
+        SwingWorker worker = new SwingWorker(){
+            private boolean didRenew = false;
+            @Override
+            protected Object doInBackground() {
+                if(!store.hasRenewable())
+                    JOptionPane.showMessageDialog(MainFrame.this, "No ads exists to renew.");
+                else{
+                    try {
+                        store.renewAll();
+                    } catch (UnsupportedEncodingException ex) {
+                        Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (IOException ex) {
+                        Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (URISyntaxException ex) {
+                        Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    didRenew = true;
+                }
+                    
+                
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                if(didRenew){
+                    //update the model
+                    JOptionPane.showMessageDialog(MainFrame.this, "All ads have now been renewed");
+                }
+                
+            }
+            
+            
+        };
+        
+        worker.execute();
+    }
+    class ShadowPane extends JComponent{
+        
+    }
+    
     
     public static void main(String args[]){
         new MainFrame();

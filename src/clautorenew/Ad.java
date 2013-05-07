@@ -4,6 +4,7 @@
  */
 package clautorenew;
 
+import java.util.ArrayList;
 import org.jsoup.select.Elements;
 
 /**
@@ -11,8 +12,8 @@ import org.jsoup.select.Elements;
  * @author Hermoine
  */
 public class Ad {
-    private String status;
-    private Elements actions;
+    private String status;// This could be deleted, expired, or inactive
+    private ArrayList<Form> actions;
     private String url;
     private String title;
 
@@ -20,11 +21,11 @@ public class Ad {
         return status;
     }
 
-    public Elements getActions() {
+    public ArrayList<Form> getActions() {
         return actions;
     }
 
-    public void setActions(Elements actions) {
+    public void setActions(ArrayList<Form> actions) {
         this.actions = actions;
     }
     
@@ -48,7 +49,7 @@ public class Ad {
         this.title = title;
     }
 
-    public Ad(String status, Elements actions, String url, String title) {
+    public Ad(String status, ArrayList<Form> actions, String url, String title) {
         this.status = status;
         this.actions = actions;
         this.url = url;
