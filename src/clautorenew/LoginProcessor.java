@@ -1,12 +1,10 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package clautorenew;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Scanner;
 import org.apache.http.HttpEntity;
@@ -70,7 +68,7 @@ public class LoginProcessor {
         
         HttpEntity entity = response.getEntity();
 
-        System.out.println("Login form get: " + response.getStatusLine());
+        System.out.println(email +" Logged in at "+new Date());
         
         Scanner input = new Scanner(entity.getContent());
         StringBuffer sb = new StringBuffer();
@@ -84,8 +82,6 @@ public class LoginProcessor {
         store.setCookeiestore(httpclient.getCookieStore());
         
         EntityUtils.consume(entity);
-        
-        System.out.println("Done");
         
         httpclient.getConnectionManager().shutdown();
         return true;

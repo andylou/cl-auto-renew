@@ -1,7 +1,4 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package clautorenew;
 
 import java.awt.AlphaComposite;
@@ -14,16 +11,18 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.JWindow;
 import net.miginfocom.swing.MigLayout;
 
 /**
  *
  * @author Hermoine
  */
-public class StatusWindow extends JDialog {
+public class StatusWindow extends JWindow {
+    private static final long serialVersionUID = 1L;
     private JProgressBar progressUI;
     private JLabel statusLabel;
-    
+    private StatusWindow inst;
     public StatusWindow(JFrame parent){
         JPanel panel = new JPanel(new MigLayout("wrap 1"));
         panel.add(new JLabel(""));
@@ -32,24 +31,20 @@ public class StatusWindow extends JDialog {
         progressUI = new JProgressBar();
         progressUI.setPreferredSize(new Dimension(300, 20));
         progressUI.setIndeterminate(true);
-        //progressUI.setString("Downloading...");
-        //progressUI.setStringPainted(true);
-        statusLabel = new JLabel("status");
         
+        statusLabel = new JLabel("status");
         
         panel.add(progressUI);
         panel.add(statusLabel);
         
-        
         add(panel);
-        setUndecorated(true);
+        
         setSize(320,70);
         setLocationRelativeTo(parent);
-        setModal(true);
-        //setAlwaysOnTop(true);
         
+        //setAlwaysOnTop(true);
         setVisible(true);
-        setDefaultCloseOperation(JDialog.EXIT_ON_CLOSE);
+        
     }
     public String getStatus(){
         return statusLabel.getText();
@@ -57,6 +52,10 @@ public class StatusWindow extends JDialog {
     
     public void setStatus(String status){
         statusLabel.setText(status);
+    }
+    
+    public static void main(String[] args) {
+        new StatusWindow(null);
     }
     
 }

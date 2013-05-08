@@ -1,7 +1,4 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package clautorenew;
 
 import java.awt.BorderLayout;
@@ -32,8 +29,8 @@ public class GlassPaneDemo extends JFrame {
         setVisible(true);
         this.setGlassPane(new MyGlassPane(new Point(this.getContentPane().getX(),this.getContentPane().getY())));
         this.getGlassPane().setVisible(true);
-        StatusWindow statusWindow = new StatusWindow(this);
-        statusWindow.setStatus("Just testint...");
+       // StatusWindow statusWindow = new StatusWindow(this);
+       // statusWindow.setStatus("Just testint...");
         //set
         //repaint();
     }

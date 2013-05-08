@@ -1,7 +1,4 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+
 package clautorenew;
 
 import java.io.IOException;
@@ -42,10 +39,10 @@ public class AdsStore {
     private static AdsStore inst;
     private ArrayList<Ad> listings;
     private CookieStore cookeiestore;
-    private DefaultListModel<Ad> listView;
+  
     private AdsStore(){
-        listView = new DefaultListModel();
-        listings = new ArrayList<>();
+        
+        listings = new ArrayList();
     }
     
     public static AdsStore getInstance(){
@@ -53,23 +50,17 @@ public class AdsStore {
             inst = new AdsStore();
         return inst;
     }
-
-    public static AdsStore getInst() {
-        return inst;
+    
+    public static void reset(){
+        if(inst !=null){
+            inst = null;
+        }
     }
 
     public static void setInst(AdsStore inst) {
         AdsStore.inst = inst;
     }
 
-    public DefaultListModel<Ad> getListView() {
-        return listView;
-    }
-
-    public void setListView(DefaultListModel<Ad> listView) {
-        this.listView = listView;
-    }
-    
     public CookieStore getCookeiestore() {
         return cookeiestore;
     }
@@ -93,6 +84,7 @@ public class AdsStore {
             }
         }
     }
+    //parse html crawled from listings page
     private void processStream(String html) throws IOException{
         Document doc = Jsoup.parse(html);
         
@@ -105,67 +97,67 @@ public class AdsStore {
         for (Iterator<Element> it = children.iterator(); it.hasNext();) {
             Element e = it.next();
             if(i!=0){
-                Ad ad = new Ad();
-                ad.setStatus(e.select("td[class=status]").text());
-                ad.setTitle(e.select("td[class=title]").text());
-                ad.setUrl(e.select("td[class=title]").select("a").attr("href"));
+                String status = e.select("td[class=status]").text();
+                if((!status.contains("Deleted")) && (!status.contains("Expired"))){
+                    Ad ad = new Ad();
+                    ad.setStatus(status);
+                    ad.setTitle(e.select("td[class=title]").text());
+                    ad.setUrl(e.select("td[class=title]").select("a").attr("href"));
 
-                Elements actions = e.select("form");
-                
-                //split actions to its different types
-                if(actions != null && actions.size()>0){
-                    //process button actions on ads
-                    
-                    ArrayList<Form> buttons = new ArrayList();
-                    for(Element formElement: actions){
-                        Form form = new Form();
-                        form.setAction(formElement.attr("action"));
-                        form.setMethod(formElement.attr("method"));
-                        
-                        Elements formChildren = formElement.children();
-                        //loop through input elements
-                        for(Element input :formChildren){
-                            FormInput formInput = new FormInput();
-                            
-                            //parse the input elements used as buttons/ actions on CL;
-                            String name = input.attr("name");
-                            String type = input.attr("type");
-                            String value = input.attr("value");        
-                                    
-                            formInput.setName(name);
-                            formInput.setType(type);
-                            formInput.setValue(value);
-                            
-                            //set the form type
-                            if(type.equals("submit")){
-                                form.setActionType(formInput.getValue());
+                    Elements actions = e.select("form");
+
+                    //split actions to its different types
+                    if(actions != null && actions.size()>0){
+                        //process button actions on ads
+
+                        ArrayList<Form> buttons = new ArrayList();
+                        for(Element formElement: actions){
+                            Form form = new Form();
+                            form.setAction(formElement.attr("action"));
+                            form.setMethod(formElement.attr("method"));
+
+                            Elements formChildren = formElement.children();
+                            //loop through input elements
+                            for(Element input :formChildren){
+                                FormInput formInput = new FormInput();
+
+                                //parse the input elements used as buttons/ actions on CL;
+                                String name = input.attr("name");
+                                String type = input.attr("type");
+                                String value = input.attr("value");        
+
+                                formInput.setName(name);
+                                formInput.setType(type);
+                                formInput.setValue(value);
+
+                                //set the form type
+                                if(type.equals("submit")){
+                                    form.setActionType(formInput.getValue());
+                                }
+
+                                if(value.contains("renew")){
+                                    ad.setStatus("Inactive");
+                                }
+
+                                form.addInputElement(formInput);
                             }
-                            
-                            if(value.contains("renew")){
-                                ad.setStatus("Inactive");
-                            }
-                            
-                            form.addInputElement(formInput);
+
+                            buttons.add(form);
+
                         }
-                        
-                        buttons.add(form);
-                        
-                    }
-                    ad.setActions(buttons);
-                    
-                }
+                        ad.setActions(buttons);
 
-                listings.add(ad);
+                    }
+
+                    listings.add(ad);
+                }
             }
             i++;    
              
         }
         
-        
-        
-        System.out.println(children.size());
-        
     }
+    
     public boolean hasRenewable(){
         boolean renewable = false;
         for(Ad ad: listings){
@@ -185,7 +177,7 @@ public class AdsStore {
         return listings;
     }
     
-    public void renewAll() throws UnsupportedEncodingException, IOException, URISyntaxException {
+    public void renewAll(DefaultListModel<Ad> listView) throws UnsupportedEncodingException, IOException, URISyntaxException {
         
         for(Ad ad: listings){
             ArrayList<Form> forms = ad.getActions();
@@ -225,13 +217,15 @@ public class AdsStore {
                        // System.out.println("GET: " +response.getStatusLine());
                     }
                     if(statusCode == 200){
-                            int index = listings.indexOf(ad);
-                            listings.remove(ad);
-                            listView.removeElement(ad);
+                        /*int index = listings.indexOf(ad);
+                         * listings.remove(ad);
+                         * listView.removeElement(ad);
+                         * 
+                         * ad.setStatus("Active");
+                         * listings.add(index,ad);
+                         * listView.add(index,ad);*/
                             
-                            ad.setStatus("Active");
-                            listings.add(index,ad);
-                            listView.add(index,ad);
+                         listView.get(listView.indexOf(ad)).setStatus("Active");
                             
                     }
                     httpclient.getConnectionManager().shutdown();
@@ -242,7 +236,7 @@ public class AdsStore {
         }
     }
     
-    public void renew(Ad ad) throws UnsupportedEncodingException, IOException, URISyntaxException {
+    public void renew(Ad ad,DefaultListModel<Ad> listView) throws UnsupportedEncodingException, IOException, URISyntaxException {
         
         ArrayList<Form> forms = ad.getActions();
 
@@ -281,13 +275,65 @@ public class AdsStore {
                    // System.out.println("GET: " +response.getStatusLine());
                 }
                 if(statusCode == 200){
-                        int index = listings.indexOf(ad);
+                    /*int list_idx = listings.indexOf(ad);
+                     * int model_idx = listView.indexOf(ad);
+                     * listings.remove(ad);
+                     * listView.removeElement(ad);
+                     * 
+                     * ad.setStatus("Active");
+                     * listings.add(list_idx,ad);
+                     * listView.add(model_idx,ad);*/
+                    
+                    listView.get(listView.indexOf(ad)).setStatus("Active");
+                        
+                }
+                httpclient.getConnectionManager().shutdown();
+
+            }
+        }
+    }
+    
+    public void delete(Ad ad,DefaultListModel<Ad> listView) throws UnsupportedEncodingException, IOException, URISyntaxException {
+        
+        ArrayList<Form> forms = ad.getActions();
+
+        for(Form f: forms){
+            if(f.getActionType().equals("delete")){
+                DefaultHttpClient httpclient = (DefaultHttpClient) getHttpClientInstance();
+                httpclient.setCookieStore(this.getCookeiestore());
+                HttpContext localContext = new BasicHttpContext();
+                String action = f.getAction();
+                String method = f.getMethod();
+                int statusCode = 404;
+                if(method.equalsIgnoreCase("post")){
+
+                    HttpPost httpost = new HttpPost(action);
+                    List <NameValuePair> nvps = new ArrayList <>();
+
+                    for(FormInput finput: f.getInputsElements()){
+                        if(!finput.getType().equals("submit"))
+                            nvps.add(new BasicNameValuePair(finput.getName(), finput.getValue()));
+                    }
+
+                    httpost.setEntity(new UrlEncodedFormEntity(nvps));
+                    HttpResponse response = httpclient.execute(httpost, localContext);
+                    statusCode = response.getStatusLine().getStatusCode();
+                    //System.out.println("POST: " +response.getStatusLine());
+
+                }else{
+                    URIBuilder uriBuilder = new URIBuilder(action);
+                    for(FormInput finput: f.getInputsElements()){
+                        uriBuilder.addParameter(finput.getName(), finput.getValue());
+                    }
+
+                    HttpGet httpget = new HttpGet(uriBuilder.build());
+                    HttpResponse response = httpclient.execute(httpget, localContext);
+                    statusCode = response.getStatusLine().getStatusCode();
+                   // System.out.println("GET: " +response.getStatusLine());
+                }
+                if(statusCode == 200){
                         listings.remove(ad);
                         listView.removeElement(ad);
-
-                        ad.setStatus("Active");
-                        listings.add(index,ad);
-                        listView.add(index,ad);
 
                 }
                 httpclient.getConnectionManager().shutdown();
