@@ -1,8 +1,10 @@
 
-package clautorenew;
+package clautorenew.ad;
 
+import clautorenew.ad.Ad;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -37,26 +39,15 @@ import org.jsoup.select.Elements;
  * @author Hermoine
  */
 
-public class AdsStore {
+public class AdsStore implements Serializable {
+    private static final long serialVersionUID = 1L;
     private String html;
     private static AdsStore inst;
 
     private CookieStore cookiestore;
     DefaultListModel<Ad> adModel;
-    private AdsStore(){
+    public AdsStore(){
         adModel = new DefaultListModel();
-    }
-    
-    public static AdsStore getInstance(){
-        if(inst==null)
-            inst = new AdsStore();
-        return inst;
-    }
-    
-    public static void reset(){
-        if(inst !=null){
-            inst = null;
-        }
     }
 
     public static void setInst(AdsStore inst) {
@@ -442,8 +433,6 @@ public class AdsStore {
                     isRedirect = super.isRedirected(request, response, context);
                     
                 } catch (ProtocolException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
                 }
                 if (!isRedirect) {
                     int responseCode = response.getStatusLine().getStatusCode();

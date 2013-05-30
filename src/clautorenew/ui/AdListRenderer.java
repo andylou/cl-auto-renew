@@ -1,6 +1,7 @@
 
-package clautorenew;
+package clautorenew.ui;
 
+import clautorenew.ad.Ad;
 import java.awt.Component;
 import java.util.logging.Level;
 import java.util.logging.Logger;

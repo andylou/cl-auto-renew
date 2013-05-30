@@ -2,8 +2,9 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package clautorenew;
+package clautorenew.conf;
 
+import clautorenew.ad.AdsStore;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
@@ -18,7 +19,7 @@ import java.util.logging.Logger;
 public class AutoRenew extends TimerTask {
     
     private void autoRenew(){
-        AdsStore store = AdsStore.getInstance();
+        AdsStore store = new AdsStore();
         try {
             store.renewAll();
         } catch (UnsupportedEncodingException ex) {

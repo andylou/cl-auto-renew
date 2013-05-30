@@ -1,7 +1,14 @@
 
-package clautorenew;
+package clautorenew.ui;
 
 
+import clautorenew.conf.Account;
+import clautorenew.ad.Ad;
+import clautorenew.ad.AdsStore;
+import clautorenew.conf.Configuration;
+import clautorenew.conf.LoginProcessor;
+import clautorenew.ad.MonitorAds;
+import clautorenew.ui.StatusWindow;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
@@ -16,6 +23,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -25,6 +33,7 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.event.MouseInputAdapter;
 import net.miginfocom.swing.MigLayout;
 import java.util.Timer;
+import javax.swing.border.TitledBorder;
 /**
  *
  * @author Hermoine
@@ -53,26 +62,61 @@ public class MainFrame extends JFrame {
         c_panel = new JPanel();
         c_panel.setLayout(new BorderLayout());
         
-        c_panel.add(showLogin());
+        c_panel.add(showListings());
         
-        add(c_panel, BorderLayout.CENTER);
+        //add(c_panel, BorderLayout.CENTER);
         
-       
+        
+        JSplitPane splitpane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, createSidePane(), c_panel);
+        add(splitpane);
         setTitle("CraigsList Auto Renew");
-        setSize(320,700);
+        setSize(520,700);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
     }
-    
+    protected JPanel createSidePane(){
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout());
+        panel.setBorder(new TitledBorder("Accounts"));
+        
+        JList<Account> accountlist = new JList<>();
+        
+        Configuration conf= Configuration.getInstance();
+        
+        //ArrayList<Account> accounts = conf.getAccounts();
+        
+        //accountlist.setListData((Account[]) accounts.toArray());
+        
+        JPanel s_panel = new JPanel();
+        s_panel.setLayout(new FlowLayout(FlowLayout.LEFT));
+        
+        JButton addbtn = new JButton(" + ");
+        addbtn.addActionListener(new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent ae){
+                
+            }
+        });
+        JButton rembtn = new JButton(" - ");
+        
+        s_panel.add(addbtn);
+        s_panel.add(rembtn);
+        
+        panel.add(new JScrollPane(accountlist));
+        panel.add(s_panel, BorderLayout.SOUTH);
+        
+        return panel;
+        
+    }
     public JPanel showListings(){
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
-        store = AdsStore.getInstance();
-        adModel = store.getAdModel();
+        //store = AdsStore.getInstance();
+//        adModel = store.getAdModel();
         
         
-        listview = new JList(adModel);
+        listview = new JList();
         
         
         listview.setSelectionBackground(Color.red);
@@ -350,7 +394,7 @@ public class MainFrame extends JFrame {
         renewallmenu.setEnabled(false);
         autorenewmenu.setEnabled(false);
         logoutmenu.setEnabled(false);
-        AdsStore.reset();
+        //AdsStore.reset();
         c_panel.invalidate();
         c_panel.add(showLogin());
         c_panel.validate();

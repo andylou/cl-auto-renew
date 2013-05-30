@@ -1,6 +1,7 @@
 
-package clautorenew;
+package clautorenew.conf;
 
+import clautorenew.ad.AdsStore;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -39,8 +40,6 @@ public class LoginProcessor {
                     isRedirect = super.isRedirected(request, response, context);
                     
                 } catch (ProtocolException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
                 }
                 if (!isRedirect) {
                     int responseCode = response.getStatusLine().getStatusCode();
@@ -79,7 +78,7 @@ public class LoginProcessor {
             sb.append(input.nextLine());
         }
         
-        AdsStore store = AdsStore.getInstance();
+        AdsStore store = new AdsStore();
         store.setHtml(sb.toString());
         
         store.setCookiestore(httpclient.getCookieStore());

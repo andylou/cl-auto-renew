@@ -2,8 +2,10 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package clautorenew;
+package clautorenew.ad;
 
+import clautorenew.ad.AdsStore;
+import clautorenew.ad.Ad;
 import java.io.IOException;
 import java.util.Scanner;
 import java.util.TimerTask;
@@ -26,7 +28,7 @@ import org.apache.http.util.EntityUtils;
  */
 public class MonitorAds extends TimerTask {
     private void fetchAds() throws IOException{
-        AdsStore store = AdsStore.getInstance();
+        AdsStore store = new AdsStore();
         DefaultHttpClient httpclient = store.getHttpClientInstance();
         System.out.println(httpclient.getCookieStore());
         CookieStore cookies = httpclient.getCookieStore();

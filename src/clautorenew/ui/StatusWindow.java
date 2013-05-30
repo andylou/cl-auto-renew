@@ -1,5 +1,5 @@
 
-package clautorenew;
+package clautorenew.ui;
 
 import java.awt.AlphaComposite;
 import java.awt.Color;

@@ -1,6 +1,8 @@
 
 package clautorenew;
 
+import clautorenew.ui.MainFrame;
+
 
 
 /**
