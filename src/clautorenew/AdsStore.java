@@ -2,14 +2,17 @@
 package clautorenew;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -37,12 +40,11 @@ import org.jsoup.select.Elements;
 public class AdsStore {
     private String html;
     private static AdsStore inst;
-    private ArrayList<Ad> listings;
-    private CookieStore cookeiestore;
-  
+
+    private CookieStore cookiestore;
+    DefaultListModel<Ad> adModel;
     private AdsStore(){
-        
-        listings = new ArrayList();
+        adModel = new DefaultListModel();
     }
     
     public static AdsStore getInstance(){
@@ -61,12 +63,12 @@ public class AdsStore {
         AdsStore.inst = inst;
     }
 
-    public CookieStore getCookeiestore() {
-        return cookeiestore;
+    public CookieStore getCookiestore() {
+        return cookiestore;
     }
 
-    public void setCookeiestore(CookieStore cookeiestore) {
-        this.cookeiestore = cookeiestore;
+    public void setCookiestore(CookieStore cookiestore) {
+        this.cookiestore = cookiestore;
     }
     
     public String getHtml(){
@@ -149,7 +151,13 @@ public class AdsStore {
 
                     }
 
-                    listings.add(ad);
+//                    if(!listings.contains(ad)){
+//                        listings.add(0,ad);
+//                    }
+                    
+                    if(!adModel.contains(ad)){
+                        adModel.add(0, ad);
+                    }
                 }
             }
             i++;    
@@ -158,9 +166,87 @@ public class AdsStore {
         
     }
     
+    public synchronized DefaultListModel<Ad> fetchUpdate(InputStream is) throws IOException{
+        
+        DefaultListModel<Ad> model = new DefaultListModel<>();
+        
+        Document doc = Jsoup.parse(is,"iso-8859-1","https://accounts.craigslist.org" );
+        
+        //Elements m_body = doc.select("table[summary='postings']");
+        Elements m_body = doc.getElementsByAttributeValue("summary", "postings");
+        
+        Elements children = m_body.get(0).children().get(0).children();
+        
+        int i =0;
+        for (Iterator<Element> it = children.iterator(); it.hasNext();) {
+            Element e = it.next();
+            if(i!=0){
+                String status = e.select("td[class=status]").text();
+                if((!status.contains("Deleted")) && (!status.contains("Expired"))){
+                    Ad ad = new Ad();
+                    ad.setStatus(status);
+                    ad.setTitle(e.select("td[class=title]").text());
+                    ad.setUrl(e.select("td[class=title]").select("a").attr("href"));
+
+                    Elements actions = e.select("form");
+
+                    //split actions to its different types
+                    if(actions != null && actions.size()>0){
+                        //process button actions on ads
+
+                        ArrayList<Form> buttons = new ArrayList();
+                        for(Element formElement: actions){
+                            Form form = new Form();
+                            form.setAction(formElement.attr("action"));
+                            form.setMethod(formElement.attr("method"));
+
+                            Elements formChildren = formElement.children();
+                            //loop through input elements
+                            for(Element input :formChildren){
+                                FormInput formInput = new FormInput();
+
+                                //parse the input elements used as buttons/ actions on CL;
+                                String name = input.attr("name");
+                                String type = input.attr("type");
+                                String value = input.attr("value");        
+
+                                formInput.setName(name);
+                                formInput.setType(type);
+                                formInput.setValue(value);
+
+                                //set the form type
+                                if(type.equals("submit")){
+                                    form.setActionType(formInput.getValue());
+                                }
+
+                                if(value.contains("renew")){
+                                    ad.setStatus("Inactive");
+                                }
+
+                                form.addInputElement(formInput);
+                            }
+
+                            buttons.add(form);
+
+                        }
+                        ad.setActions(buttons);
+
+                    }
+                        model.add(0, ad);
+                }
+            }
+            i++;    
+             
+        }
+        return model;
+    }
+
+    public DefaultListModel<Ad> getAdModel() {
+        return adModel;
+    }
     public boolean hasRenewable(){
         boolean renewable = false;
-        for(Ad ad: listings){
+        for(Ad ad: (Ad[])adModel.toArray()){
             for(Form form: ad.getActions()){
                 if(form.toString().contains("renew")){
                     renewable = form.toString().contains("renew");
@@ -173,19 +259,19 @@ public class AdsStore {
         
         return renewable;
     }
-    public ArrayList<Ad> getListings() {
-        return listings;
-    }
+    /*public ArrayList<Ad> getListings() {
+     * return listings;
+     * }*/
     
-    public void renewAll(DefaultListModel<Ad> listView) throws UnsupportedEncodingException, IOException, URISyntaxException {
+    public void renewAll() throws UnsupportedEncodingException, IOException, URISyntaxException {
         
-        for(Ad ad: listings){
+        for(Ad ad: (Ad[])adModel.toArray()){
             ArrayList<Form> forms = ad.getActions();
             
             for(Form f: forms){
                 if(f.getActionType().equals("renew")){
-                    DefaultHttpClient httpclient = (DefaultHttpClient) getHttpClientInstance();
-                    httpclient.setCookieStore(this.getCookeiestore());
+                    DefaultHttpClient httpclient = this.getHttpClientInstance();
+                    
                     HttpContext localContext = new BasicHttpContext();
                     String action = f.getAction();
                     String method = f.getMethod();
@@ -217,15 +303,9 @@ public class AdsStore {
                        // System.out.println("GET: " +response.getStatusLine());
                     }
                     if(statusCode == 200){
-                        /*int index = listings.indexOf(ad);
-                         * listings.remove(ad);
-                         * listView.removeElement(ad);
-                         * 
-                         * ad.setStatus("Active");
-                         * listings.add(index,ad);
-                         * listView.add(index,ad);*/
                             
-                         listView.get(listView.indexOf(ad)).setStatus("Active");
+                         adModel.get(adModel.indexOf(ad)).setStatus("Active");
+                         //listings.get(listings.indexOf(ad)).setStatus("Active");
                             
                     }
                     httpclient.getConnectionManager().shutdown();
@@ -235,15 +315,34 @@ public class AdsStore {
             
         }
     }
-    
-    public void renew(Ad ad,DefaultListModel<Ad> listView) throws UnsupportedEncodingException, IOException, URISyntaxException {
+    public String getPublicUrl(String url) throws IOException{
+        
+        DefaultHttpClient httpclient = this.getHttpClientInstance();
+        HttpGet httpget = new HttpGet(url);
+        HttpResponse response = httpclient.execute(httpget);
+        
+        HttpEntity entity = response.getEntity();
+        
+        Scanner in = new Scanner(entity.getContent());
+        StringBuffer sb = new StringBuffer();
+        
+        while(in.hasNextLine()){
+            sb.append(in.nextLine());
+        }
+        Document doc = Jsoup.parse(sb.toString());
+        
+        String public_url = doc.select("table[summary=status]").get(0).children().get(0).select("a[target=_blank]").attr("href");
+        
+        return public_url;
+    }
+    public void renew(Ad ad) throws UnsupportedEncodingException, IOException, URISyntaxException {
         
         ArrayList<Form> forms = ad.getActions();
 
         for(Form f: forms){
             if(f.getActionType().equals("renew")){
-                DefaultHttpClient httpclient = (DefaultHttpClient) getHttpClientInstance();
-                httpclient.setCookieStore(this.getCookeiestore());
+                DefaultHttpClient httpclient = this.getHttpClientInstance();
+
                 HttpContext localContext = new BasicHttpContext();
                 String action = f.getAction();
                 String method = f.getMethod();
@@ -275,16 +374,8 @@ public class AdsStore {
                    // System.out.println("GET: " +response.getStatusLine());
                 }
                 if(statusCode == 200){
-                    /*int list_idx = listings.indexOf(ad);
-                     * int model_idx = listView.indexOf(ad);
-                     * listings.remove(ad);
-                     * listView.removeElement(ad);
-                     * 
-                     * ad.setStatus("Active");
-                     * listings.add(list_idx,ad);
-                     * listView.add(model_idx,ad);*/
-                    
-                    listView.get(listView.indexOf(ad)).setStatus("Active");
+                    adModel.get(adModel.indexOf(ad)).setStatus("Active");
+                    //listings.get(listings.indexOf(ad)).setStatus("Active");
                         
                 }
                 httpclient.getConnectionManager().shutdown();
@@ -293,14 +384,14 @@ public class AdsStore {
         }
     }
     
-    public void delete(Ad ad,DefaultListModel<Ad> listView) throws UnsupportedEncodingException, IOException, URISyntaxException {
+    public void delete(Ad ad) throws UnsupportedEncodingException, IOException, URISyntaxException {
         
         ArrayList<Form> forms = ad.getActions();
 
         for(Form f: forms){
             if(f.getActionType().equals("delete")){
-                DefaultHttpClient httpclient = (DefaultHttpClient) getHttpClientInstance();
-                httpclient.setCookieStore(this.getCookeiestore());
+                DefaultHttpClient httpclient = this.getHttpClientInstance();
+                
                 HttpContext localContext = new BasicHttpContext();
                 String action = f.getAction();
                 String method = f.getMethod();
@@ -332,8 +423,7 @@ public class AdsStore {
                    // System.out.println("GET: " +response.getStatusLine());
                 }
                 if(statusCode == 200){
-                        listings.remove(ad);
-                        listView.removeElement(ad);
+                        adModel.removeElement(ad);
 
                 }
                 httpclient.getConnectionManager().shutdown();
@@ -364,7 +454,7 @@ public class AdsStore {
                 return isRedirect;
             }
         });
-        
+        httpclient.setCookieStore(this.getCookiestore());
         return httpclient;
     }
 }

@@ -1,9 +1,7 @@
 
 package clautorenew;
 
-import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 /**
  *
@@ -11,12 +9,20 @@ import java.util.logging.Logger;
  */
 final public class CLAutoRenew {
 
-    /**
+    /**22
      * @param args the command line arguments
      */
     public static void main(String[] args) {
        // new HttpClientDemo();
         
         new MainFrame();
+        
+        //Timer autorenew = new Timer(true);
+        //autorenew.schedule(new AutoRenew(), 1000, 2000);
+        
+        
+        
+        
+        
     }
 }

@@ -4,15 +4,19 @@ package clautorenew;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URL;
 import java.net.URISyntaxException;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
@@ -20,7 +24,7 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.MouseInputAdapter;
 import net.miginfocom.swing.MigLayout;
-
+import java.util.Timer;
 /**
  *
  * @author Hermoine
@@ -28,7 +32,7 @@ import net.miginfocom.swing.MigLayout;
 public class MainFrame extends JFrame {
     private static final long serialVersionUID = 1L;
     private JPanel c_panel;
-    DefaultListModel<Ad> adModel = new DefaultListModel();
+    private DefaultListModel<Ad> adModel;
     private AdsStore store;
     private JList listview;
     private JButton renewbtn;
@@ -41,7 +45,6 @@ public class MainFrame extends JFrame {
     private boolean didDelete;
     private boolean didRenewall;
     public MainFrame(){
-        
         initUI();
     }
     public void initUI(){
@@ -61,16 +64,17 @@ public class MainFrame extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
     }
+    
     public JPanel showListings(){
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
         store = AdsStore.getInstance();
+        adModel = store.getAdModel();
         
-        for(Ad ad: store.getListings()){
-            adModel.addElement(ad);
-        }
         
         listview = new JList(adModel);
+        
+        
         listview.setSelectionBackground(Color.red);
         listview.setFixedCellHeight(30);
         listview.setCellRenderer(new AdListRenderer());
@@ -93,7 +97,13 @@ public class MainFrame extends JFrame {
             @Override
             public void mouseClicked(MouseEvent e) {
                 if(e.getClickCount()==2){
-                    JOptionPane.showMessageDialog(null, listview.getSelectedValue());
+                    try {
+                        openAd((Ad)listview.getSelectedValue());
+                    } catch (IOException ex) {
+                        Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (URISyntaxException ex) {
+                        Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+                    }
                 }
             }
 
@@ -104,9 +114,12 @@ public class MainFrame extends JFrame {
         
         return panel;
     }
-    public void openAd(Ad ad) throws IOException{
-        Runtime r = Runtime.getRuntime();
-        r.exec(ad.getUrl());
+    public void openAd(Ad ad) throws URISyntaxException, IOException{
+        
+        String url = store.getPublicUrl(ad.getUrl());
+       
+        
+        Desktop.getDesktop().browse(new URL(url).toURI());
         
     }
     public JMenuBar createMenuBar(){
@@ -123,6 +136,13 @@ public class MainFrame extends JFrame {
             }
         });
         autorenewmenu = new JMenuItem("Setup Automatic Renewal");
+        autorenewmenu.addActionListener(new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent ae){
+                AutoRenewUI autoRenewUI = AutoRenewUI.getInstance(MainFrame.this);
+                autoRenewUI.setVisible(true);
+            }
+        });
         autorenewmenu.setEnabled(false);
         
         logoutmenu = new JMenuItem("Logout");
@@ -289,7 +309,18 @@ public class MainFrame extends JFrame {
 
 
                         MainFrame.this.repaint();
-
+                        
+                        //start checking for updates
+                        Timer checkForUpdates = new Timer(true);
+                        checkForUpdates.schedule(new MonitorAds(),300, 30*1000);
+                        
+                        //start automatic renewal if enabled
+                        /*AutoRenewUI auto_renewUI = AutoRenewUI.getInstance(MainFrame.this);
+                        Properties props = new Properties();
+                        props.load(new FileReader(new File("conf.properties")));
+                        AutoRenewUI.enableAction(props.getProperty("autorenew").equals("true")?true:false,
+                                Integer.parseInt(props.getProperty("interval")));*/
+                        
                     }else{
                         errlbl.setText("Invalid Username or password");
                     }
@@ -372,14 +403,14 @@ public class MainFrame extends JFrame {
                     if(ad != null){
                         if(action.equals("delete")){
                             
-                            store.delete(ad, adModel);
+                            store.delete(ad);
                             didDelete=true;
                         }
                         if(action.equals("renew")){
                             if(!ad.getStatus().equalsIgnoreCase("inactive"))
                                 JOptionPane.showMessageDialog(MainFrame.this, "This ad is currently active");
                             else{
-                                store.renew(ad, adModel);
+                                store.renew(ad);
                                 didRenew = true;
                             }
                             
@@ -389,7 +420,7 @@ public class MainFrame extends JFrame {
                         if(!store.hasRenewable())
                             JOptionPane.showMessageDialog(MainFrame.this, "No ads exists to renew.");
                         else{
-                            store.renewAll(adModel);
+                            store.renewAll();
                             didRenewall = true;
                         }
                         

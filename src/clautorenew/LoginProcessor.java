@@ -12,8 +12,10 @@ import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.ProtocolException;
+import org.apache.http.client.CookieStore;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultRedirectStrategy;
 import org.apache.http.message.BasicNameValuePair;
@@ -79,7 +81,8 @@ public class LoginProcessor {
         
         AdsStore store = AdsStore.getInstance();
         store.setHtml(sb.toString());
-        store.setCookeiestore(httpclient.getCookieStore());
+        
+        store.setCookiestore(httpclient.getCookieStore());
         
         EntityUtils.consume(entity);
         
