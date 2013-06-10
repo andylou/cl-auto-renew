@@ -1,13 +1,14 @@
 
 package clautorenew.ad;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
  *
  * @author Hermoine
  */
-public class Form {
+public class Form implements Serializable{
     private String method;
     private String action;
     private String actionType;

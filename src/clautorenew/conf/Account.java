@@ -5,12 +5,14 @@
 package clautorenew.conf;
 
 import clautorenew.ad.AdsStore;
+import java.io.Serializable;
+import java.util.Objects;
 
 /**
  *
  * @author Hermoine
  */
-public class Account {
+public class Account implements Serializable {
     
     private String email;
     private String password;
@@ -23,7 +25,6 @@ public class Account {
         this.password = password;
         this.accountName = accountName;
         this.autorenewAll = autorenewAll;
-        
     }
 
     public AdsStore getStore() {
@@ -78,6 +79,23 @@ public class Account {
     public String toString() {
         return this.getEmail();
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Account){
+            Account a = (Account) obj;
+            return a.email.equals(this.email);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 17 * hash + Objects.hashCode(this.email);
+        return hash;
+    }
+    
     
     
 }

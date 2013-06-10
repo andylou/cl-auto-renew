@@ -2,13 +2,11 @@
 package clautorenew.ui;
 
 
+import clautorenew.ad.AccountUpdate;
 import clautorenew.conf.Account;
 import clautorenew.ad.Ad;
 import clautorenew.ad.AdsStore;
 import clautorenew.conf.Configuration;
-import clautorenew.conf.LoginProcessor;
-import clautorenew.ad.MonitorAds;
-import clautorenew.ui.StatusWindow;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Desktop;
@@ -17,22 +15,18 @@ import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
-import java.io.File;
-import java.io.FileReader;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.MouseInputAdapter;
-import net.miginfocom.swing.MigLayout;
-import java.util.Timer;
 import javax.swing.border.TitledBorder;
 /**
  *
@@ -41,22 +35,22 @@ import javax.swing.border.TitledBorder;
 public class MainFrame extends JFrame {
     private static final long serialVersionUID = 1L;
     private JPanel c_panel;
-    private DefaultListModel<Ad> adModel;
-    private AdsStore store;
-    private JList listview;
+    private JList<Ad> listview;
     private JButton renewbtn;
     private JButton deletebtn;
     private JLabel errlbl;
-    private JMenuItem logoutmenu;
     private JMenuItem renewallmenu;
     private JMenuItem autorenewmenu;
     private boolean didRenew;
     private boolean didDelete;
     private boolean didRenewall;
+    private JList<Account> accountlist;
+    protected DefaultListModel<Account> accountmodel;
     public MainFrame(){
         initUI();
     }
     public void initUI(){
+        accountmodel = new DefaultListModel<>();
         setJMenuBar(createMenuBar());
         add(createBannerPanel(),"North");
         c_panel = new JPanel();
@@ -64,42 +58,99 @@ public class MainFrame extends JFrame {
         
         c_panel.add(showListings());
         
-        //add(c_panel, BorderLayout.CENTER);
-        
+        //load configurations from file
+        final Configuration config = Configuration.getInstance();
+        if(config.getAccounts()!=null){
+            accountmodel = config.getAccounts();
+        }
         
         JSplitPane splitpane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, createSidePane(), c_panel);
         add(splitpane);
+        splitpane.setDividerLocation(250);
+        splitpane.setDividerSize(5);
         setTitle("CraigsList Auto Renew");
-        setSize(520,700);
+        setSize(620,700);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setVisible(true);
+        
+        addWindowListener(new WindowAdapter() {
+
+            @Override
+            public void windowClosing(WindowEvent e) {
+                try {
+                    config.save();
+                } catch (IOException ex) {
+                    Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            
+        });
+        
+        AccountUpdate updates = AccountUpdate.getInstance();
+        updates.startUpdate();
     }
+    
     protected JPanel createSidePane(){
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
         panel.setBorder(new TitledBorder("Accounts"));
-        
-        JList<Account> accountlist = new JList<>();
-        
-        Configuration conf= Configuration.getInstance();
-        
-        //ArrayList<Account> accounts = conf.getAccounts();
-        
-        //accountlist.setListData((Account[]) accounts.toArray());
+        accountlist = new JList<>(accountmodel);
+        accountlist.setFixedCellHeight(40);
+        if(!accountmodel.isEmpty()){
+            accountlist.setSelectedIndex(0);
+            
+            listview.setModel(accountlist.getSelectedValue().getStore().getAdModel());
+            
+        }
+        accountlist.addListSelectionListener(new ListSelectionListener() {
+
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                if(e.getValueIsAdjusting()){
+                    Account account = accountlist.getSelectedValue();
+                    listview.setModel(account.getStore().getAdModel());
+                }
+            }
+        });
         
         JPanel s_panel = new JPanel();
         s_panel.setLayout(new FlowLayout(FlowLayout.LEFT));
         
-        JButton addbtn = new JButton(" + ");
+        JButton addbtn = new JButton("+");
         addbtn.addActionListener(new ActionListener(){
             @Override
             public void actionPerformed(ActionEvent ae){
+                new AddAccountUI(MainFrame.this);
+            }
+        });
+        JButton rembtn = new JButton("-");
+        //remove accoount btn action
+        rembtn.addActionListener(new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent a){
+                //confirm remove
+                Account acc = accountlist.getSelectedValue();
+                int reply = JOptionPane.showConfirmDialog(MainFrame.this, "Are you sure you want to delete Account: "+
+                        acc.getEmail()+"?", "Delete Account", JOptionPane.YES_NO_OPTION);
+                
+                if(reply == JOptionPane.YES_OPTION){
+                    //remove account from configuration
+                    Configuration config = Configuration.getInstance();
+                    config.deleteAccount(acc);
+                    
+                    //cancel auto update for account
+                    AccountUpdate updates = AccountUpdate.getInstance();
+                    updates.remove(acc);
+                    
+                    //remove account from UI
+                    listview.setModel(new DefaultListModel<Ad>());
+                    //accountmodel.removeElement(acc); //no need for this because the the ui is using the same model object with configuration
+                }
+                
                 
             }
         });
-        JButton rembtn = new JButton(" - ");
-        
         s_panel.add(addbtn);
         s_panel.add(rembtn);
         
@@ -109,15 +160,20 @@ public class MainFrame extends JFrame {
         return panel;
         
     }
+    //used bu AddAccountUI to display new accounts on the UI
+    public void addAccount(Account account){
+        //accountmodel.addElement(account);//no need for this because the the ui is using the same model object with configuration
+        accountlist.clearSelection();
+        accountlist.setSelectedValue(account, true);
+        listview.setModel(account.getStore().getAdModel());
+    }
+    
+    //the listings ui
     public JPanel showListings(){
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
-        //store = AdsStore.getInstance();
-//        adModel = store.getAdModel();
-        
-        
-        listview = new JList();
-        
+         
+        listview = new JList();  
         
         listview.setSelectionBackground(Color.red);
         listview.setFixedCellHeight(30);
@@ -126,12 +182,16 @@ public class MainFrame extends JFrame {
 
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                Ad ad = adModel.get(listview.getSelectedIndex());
-                if(ad.getStatus().equalsIgnoreCase("inactive")){
-                    renewbtn.setEnabled(true);
-                }else{
-                    renewbtn.setEnabled(false);
+                if(e.getValueIsAdjusting()){
+                    Account account = accountlist.getSelectedValue();
+                    Ad ad = account.getStore().getAdModel().get(listview.getSelectedIndex());
+                    if(ad.getStatus().equalsIgnoreCase("inactive")){
+                        renewbtn.setEnabled(true);
+                    }else{
+                        renewbtn.setEnabled(false);
+                    }
                 }
+                
                                 
             }
         });
@@ -155,12 +215,14 @@ public class MainFrame extends JFrame {
         
         
         panel.add(new JScrollPane(listview));
-        
+        panel.add(createButtonPanel(), BorderLayout.SOUTH);
         return panel;
     }
+    
+    //displays an ad in the default system browser when clicked
     public void openAd(Ad ad) throws URISyntaxException, IOException{
-        
-        String url = store.getPublicUrl(ad.getUrl());
+        Account account = accountlist.getSelectedValue();
+        String url = account.getStore().getPublicUrl(ad.getUrl());
        
         
         Desktop.getDesktop().browse(new URL(url).toURI());
@@ -189,14 +251,7 @@ public class MainFrame extends JFrame {
         });
         autorenewmenu.setEnabled(false);
         
-        logoutmenu = new JMenuItem("Logout");
-        logoutmenu.addActionListener(new ActionListener(){
-            @Override
-            public void actionPerformed(ActionEvent ae){
-                logout();
-            }
-        });
-        logoutmenu.setEnabled(false);
+        
         JMenuItem exit = new JMenuItem("Exit");
         exit.addActionListener(new ActionListener(){
             @Override
@@ -210,7 +265,6 @@ public class MainFrame extends JFrame {
         
         actionmenu.addSeparator();
         
-        actionmenu.add(logoutmenu);
         actionmenu.add(exit);
         
         mbar.add(actionmenu);
@@ -263,7 +317,7 @@ public class MainFrame extends JFrame {
                 if(listview.getSelectedValue()!=null){
                     doDelete((Ad)listview.getSelectedValue());
                 }else{
-                    JOptionPane.showMessageDialog(MainFrame.this, "You select an ad first");
+                    JOptionPane.showMessageDialog(MainFrame.this, "You have to select an ad first");
                 }
             }
 
@@ -279,143 +333,21 @@ public class MainFrame extends JFrame {
         return opanel;
     }
     
-    public JPanel showLogin(){
-        JPanel panel = new JPanel();
-        
-        panel.setLayout(new MigLayout("wrap 2"));
-        
-        JLabel emaillabel = new JLabel("Email");
-        final JTextField emailfield = new JTextField(20);
-        
-        JLabel passlabel = new JLabel("Password");
-        final JPasswordField passfield = new JPasswordField(20);
-        errlbl = new JLabel("");
-        errlbl.setForeground(Color.red);
-        
-        JButton loginbtn = new JButton("Login");
-        loginbtn.addActionListener(new ActionListener(){
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                loginAction(emailfield.getText(),new String(passfield.getPassword()));
-            }
-        
-        });
-        emailfield.addActionListener(new ActionListener(){
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                loginAction(emailfield.getText(),new String(passfield.getPassword()));
-            }
-        
-        });
-        passfield.addActionListener(new ActionListener(){
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                loginAction(emailfield.getText(),new String(passfield.getPassword()));
-            }
-        
-        });
-        //loginbtn.setPreferredSize(new Dimension(300,70));
-        panel.add(emaillabel);
-        panel.add(emailfield);
-        panel.add(passlabel);
-        panel.add(passfield);
-        panel.add(errlbl, "span 2");
-        panel.add(new JLabel(""),"wrap");
-        panel.add(new JLabel(""),"wrap");
-        panel.add(new JLabel(""),"wrap");
-        panel.add(new JLabel(""),"wrap");
-        panel.add(loginbtn, "span 2");
-        
-        return panel;
-    }
-    private void loginAction(final String email, final String password){
-        SwingWorker<Object,Void> loginworker = new SwingWorker(){
-            StatusWindow busywindow = new StatusWindow(MainFrame.this);
-            @Override
-            protected Object doInBackground() throws Exception {
-                try {
-                    busywindow.setStatus("please wait...");
-                    if(LoginProcessor.doLogin(email, password)){
-
-
-                        c_panel.removeAll();
-                        c_panel.invalidate();
-                        renewallmenu.setEnabled(true);
-                        autorenewmenu.setEnabled(true);
-                        logoutmenu.setEnabled(true);
-                        c_panel.add(showListings());
-                        c_panel.add(createButtonPanel(),"South");
-                        
-                        c_panel.validate();
-
-
-                        MainFrame.this.repaint();
-                        
-                        //start checking for updates
-                        Timer checkForUpdates = new Timer(true);
-                        checkForUpdates.schedule(new MonitorAds(),300, 30*1000);
-                        
-                        //start automatic renewal if enabled
-                        /*AutoRenewUI auto_renewUI = AutoRenewUI.getInstance(MainFrame.this);
-                        Properties props = new Properties();
-                        props.load(new FileReader(new File("conf.properties")));
-                        AutoRenewUI.enableAction(props.getProperty("autorenew").equals("true")?true:false,
-                                Integer.parseInt(props.getProperty("interval")));*/
-                        
-                    }else{
-                        errlbl.setText("Invalid Username or password");
-                    }
-                    busywindow.dispose();
-                } catch (UnsupportedEncodingException ex) {
-                    Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (IOException ex) {
-                    Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                
-                return null;
-            }
-
-            @Override
-            protected void done() {
-               busywindow.dispose();
-               
-            }
-            
-            
-        };
-        MainFrame.this.repaint(10);
-        loginworker.execute();
-    }
-    public void logout(){
-        c_panel.removeAll();
-        renewallmenu.setEnabled(false);
-        autorenewmenu.setEnabled(false);
-        logoutmenu.setEnabled(false);
-        //AdsStore.reset();
-        c_panel.invalidate();
-        c_panel.add(showLogin());
-        c_panel.validate();
-        MainFrame.this.repaint(10);
-    }
-    
     private void doDelete(Ad ad) {
         int reply = JOptionPane.showConfirmDialog(MainFrame.this, "Are you sure you want to delete this ad", "Delete Ad - "+ad.getTitle(), JOptionPane.YES_NO_OPTION);
         if(reply == JOptionPane.YES_OPTION){
-            SwingWorker worker = new AdManager(ad, "delete");
+            SwingWorker<Object, Void> worker = new AdManager(ad, "delete", accountlist.getSelectedValue());
             worker.execute();
         }
     }
     
     public void doRenewAll(){
-        SwingWorker worker = new AdManager();
+        SwingWorker<Object, Void> worker = new AdManager(accountlist.getSelectedValue());
         worker.execute();
     }
     
     public void doRenew(Ad ad){
-        SwingWorker worker = new AdManager(ad, "renew");
+        SwingWorker<Object, Void> worker = new AdManager(ad, "renew", accountlist.getSelectedValue());
         worker.execute();
     }
     
@@ -429,12 +361,14 @@ public class MainFrame extends JFrame {
             private Ad ad;
             private String action;
             private StatusWindow busywindow = new StatusWindow(MainFrame.this);
-            public AdManager(){
-                this(null,null);
+            private Account account;
+            public AdManager(Account account){
+                this(null,null,account);
             }
-            public AdManager(Ad ad, String action){
+            public AdManager(Ad ad, String action, Account account){
                 this.ad = ad;
                 this.action = action;
+                this.account = account;
                 didDelete = false;
                 didRenew = false;
                 didRenewall = false;
@@ -443,8 +377,9 @@ public class MainFrame extends JFrame {
             protected Object doInBackground() {
                 busywindow.setStatus("Please wait...");
                 try {
-                        
+                    AdsStore store = account.getStore();    
                     if(ad != null){
+                        
                         if(action.equals("delete")){
                             
                             store.delete(ad);
@@ -461,9 +396,9 @@ public class MainFrame extends JFrame {
                         }
 
                     }else{
-                        if(!store.hasRenewable())
+                        if(!store.hasRenewable()){
                             JOptionPane.showMessageDialog(MainFrame.this, "No ads exists to renew.");
-                        else{
+                        }else{
                             store.renewAll();
                             didRenewall = true;
                         }

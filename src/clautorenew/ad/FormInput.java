@@ -1,11 +1,13 @@
 
 package clautorenew.ad;
 
+import java.io.Serializable;
+
 /**
  *
  * @author Hermoine
  */
-public class FormInput {
+public class FormInput implements Serializable {
     private String name;
     private String type;
     private String value;

@@ -1,6 +1,7 @@
 
 package clautorenew.ad;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import org.jsoup.select.Elements;
 
@@ -8,7 +9,7 @@ import org.jsoup.select.Elements;
  *
  * @author Hermoine
  */
-public class Ad {
+public class Ad implements Serializable {
     private String status;// This could be deleted, expired, or inactive
     private ArrayList<Form> actions;
     private String url;

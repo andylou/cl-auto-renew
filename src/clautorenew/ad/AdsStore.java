@@ -1,7 +1,7 @@
 
 package clautorenew.ad;
 
-import clautorenew.ad.Ad;
+import clautorenew.conf.Account;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -11,8 +11,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.DefaultListModel;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpRequest;
@@ -40,18 +38,11 @@ import org.jsoup.select.Elements;
  */
 
 public class AdsStore implements Serializable {
-    private static final long serialVersionUID = 1L;
-    private String html;
-    private static AdsStore inst;
-
+    private static final long serialVersionUID = 13552L;
     private CookieStore cookiestore;
     DefaultListModel<Ad> adModel;
     public AdsStore(){
-        adModel = new DefaultListModel();
-    }
-
-    public static void setInst(AdsStore inst) {
-        AdsStore.inst = inst;
+        adModel = new DefaultListModel<>();
     }
 
     public CookieStore getCookiestore() {
@@ -62,26 +53,11 @@ public class AdsStore implements Serializable {
         this.cookiestore = cookiestore;
     }
     
-    public String getHtml(){
-        return html;
-    }
-    
-    public void setHtml(String html ){
-        this.html = html;
-        
-        if(html != null){
-            try {
-                processStream(html);
-            } catch (IOException ex) {
-                Logger.getLogger(AdsStore.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-    }
     //parse html crawled from listings page
-    private void processStream(String html) throws IOException{
-        Document doc = Jsoup.parse(html);
+    protected DefaultListModel<Ad> processStream(InputStream inputStream, String charset, String url) throws IOException{
+        DefaultListModel<Ad> model = new DefaultListModel<>();
+        Document doc = Jsoup.parse(inputStream,charset, url);
         
-        //Elements m_body = doc.select("table[summary='postings']");
         Elements m_body = doc.getElementsByAttributeValue("summary", "postings");
         
         Elements children = m_body.get(0).children().get(0).children();
@@ -146,98 +122,31 @@ public class AdsStore implements Serializable {
 //                        listings.add(0,ad);
 //                    }
                     
-                    if(!adModel.contains(ad)){
-                        adModel.add(0, ad);
+                    if(!model.contains(ad)){
+                        model.add(0, ad);
                     }
                 }
             }
             i++;    
              
         }
+        setModel(model);
+        return model;
         
     }
     
-    public synchronized DefaultListModel<Ad> fetchUpdate(InputStream is) throws IOException{
-        
-        DefaultListModel<Ad> model = new DefaultListModel<>();
-        
-        Document doc = Jsoup.parse(is,"iso-8859-1","https://accounts.craigslist.org" );
-        
-        //Elements m_body = doc.select("table[summary='postings']");
-        Elements m_body = doc.getElementsByAttributeValue("summary", "postings");
-        
-        Elements children = m_body.get(0).children().get(0).children();
-        
-        int i =0;
-        for (Iterator<Element> it = children.iterator(); it.hasNext();) {
-            Element e = it.next();
-            if(i!=0){
-                String status = e.select("td[class=status]").text();
-                if((!status.contains("Deleted")) && (!status.contains("Expired"))){
-                    Ad ad = new Ad();
-                    ad.setStatus(status);
-                    ad.setTitle(e.select("td[class=title]").text());
-                    ad.setUrl(e.select("td[class=title]").select("a").attr("href"));
-
-                    Elements actions = e.select("form");
-
-                    //split actions to its different types
-                    if(actions != null && actions.size()>0){
-                        //process button actions on ads
-
-                        ArrayList<Form> buttons = new ArrayList();
-                        for(Element formElement: actions){
-                            Form form = new Form();
-                            form.setAction(formElement.attr("action"));
-                            form.setMethod(formElement.attr("method"));
-
-                            Elements formChildren = formElement.children();
-                            //loop through input elements
-                            for(Element input :formChildren){
-                                FormInput formInput = new FormInput();
-
-                                //parse the input elements used as buttons/ actions on CL;
-                                String name = input.attr("name");
-                                String type = input.attr("type");
-                                String value = input.attr("value");        
-
-                                formInput.setName(name);
-                                formInput.setType(type);
-                                formInput.setValue(value);
-
-                                //set the form type
-                                if(type.equals("submit")){
-                                    form.setActionType(formInput.getValue());
-                                }
-
-                                if(value.contains("renew")){
-                                    ad.setStatus("Inactive");
-                                }
-
-                                form.addInputElement(formInput);
-                            }
-
-                            buttons.add(form);
-
-                        }
-                        ad.setActions(buttons);
-
-                    }
-                        model.add(0, ad);
-                }
-            }
-            i++;    
-             
-        }
-        return model;
-    }
-
     public DefaultListModel<Ad> getAdModel() {
         return adModel;
     }
+    
+    public void setModel(DefaultListModel<Ad> adModel){
+        this.adModel = adModel;
+    }
+    
     public boolean hasRenewable(){
         boolean renewable = false;
-        for(Ad ad: (Ad[])adModel.toArray()){
+        for(int i=0;i<adModel.size();i++ ){
+            Ad ad = adModel.get(i);
             for(Form form: ad.getActions()){
                 if(form.toString().contains("renew")){
                     renewable = form.toString().contains("renew");
@@ -250,13 +159,11 @@ public class AdsStore implements Serializable {
         
         return renewable;
     }
-    /*public ArrayList<Ad> getListings() {
-     * return listings;
-     * }*/
     
     public void renewAll() throws UnsupportedEncodingException, IOException, URISyntaxException {
-        
-        for(Ad ad: (Ad[])adModel.toArray()){
+       
+        for(int i=0;i<adModel.size();i++){
+            Ad ad = adModel.get(i);
             ArrayList<Form> forms = ad.getActions();
             
             for(Form f: forms){

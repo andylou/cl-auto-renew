@@ -3,6 +3,7 @@ package clautorenew.ui;
 
 import java.awt.AlphaComposite;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -23,7 +24,7 @@ public class StatusWindow extends JWindow {
     private JProgressBar progressUI;
     private JLabel statusLabel;
     private StatusWindow inst;
-    public StatusWindow(JFrame parent){
+    public StatusWindow(Component parent){
         JPanel panel = new JPanel(new MigLayout("wrap 1"));
         panel.add(new JLabel(""));
         panel.add(new JLabel(""));

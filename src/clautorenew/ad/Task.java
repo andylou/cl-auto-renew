@@ -4,10 +4,12 @@
  */
 package clautorenew.ad;
 
+import java.io.Serializable;
+
 /**
  *
  * @author Hermoine
  */
-public class JobQueue {
+public interface Task extends Runnable, Serializable {
     
 }

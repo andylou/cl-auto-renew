@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/1">
+        <file>file:/Users/Hermoine/development/NetBeansProjects/CLAutoRenew/src/clautorenew/ui/AddAccountUI.java</file>
+        <file>file:/Users/Hermoine/development/NetBeansProjects/CLAutoRenew/src/clautorenew/ui/MainFrame.java</file>
+        <file>file:/Users/Hermoine/development/NetBeansProjects/CLAutoRenew/src/clautorenew/ad/AdsStore.java</file>
+        <file>file:/Users/Hermoine/development/NetBeansProjects/CLAutoRenew/src/clautorenew/ad/AccountUpdate.java</file>
+        <file>file:/Users/Hermoine/development/NetBeansProjects/CLAutoRenew/src/clautorenew/ad/Task.java</file>
+        <file>file:/Users/Hermoine/development/NetBeansProjects/CLAutoRenew/src/clautorenew/ad/AccountTaskImpl.java</file>
+        <file>file:/Users/Hermoine/development/NetBeansProjects/CLAutoRenew/src/clautorenew/conf/Account.java</file>
+        <file>file:/Users/Hermoine/development/NetBeansProjects/CLAutoRenew/src/clautorenew/ad/ThreadPoolDemo.java</file>
+    </open-files>
 </project-private>
