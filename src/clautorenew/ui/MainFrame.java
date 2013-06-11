@@ -17,6 +17,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
@@ -88,14 +89,30 @@ public class MainFrame extends JFrame {
         });
         
         AccountUpdate updates = AccountUpdate.getInstance();
-        updates.startUpdate();
+        updates.startAccountUpdate();
+        try {
+            config.loadInterval();
+            if(config.isAutorenew()){
+                updates.beginAutoRenew(config.getTime(), config.getTimeunit());
+            }
+        }catch(EOFException e){
+            //do nothing for end of file exceptions
+        } catch (IOException ex) {
+            Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        
     }
     
     protected JPanel createSidePane(){
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());
         panel.setBorder(new TitledBorder("Accounts"));
-        accountlist = new JList<>(accountmodel);
+        accountlist = new JList<>();
+        accountlist.setCellRenderer(new AccountListRenderer());
+        accountlist.setModel(accountmodel);
         accountlist.setFixedCellHeight(40);
         if(!accountmodel.isEmpty()){
             accountlist.setSelectedIndex(0);
@@ -202,7 +219,7 @@ public class MainFrame extends JFrame {
             public void mouseClicked(MouseEvent e) {
                 if(e.getClickCount()==2){
                     try {
-                        openAd((Ad)listview.getSelectedValue());
+                        openAd(listview.getSelectedValue());
                     } catch (IOException ex) {
                         Logger.getLogger(MainFrame.class.getName()).log(Level.SEVERE, null, ex);
                     } catch (URISyntaxException ex) {
@@ -233,7 +250,7 @@ public class MainFrame extends JFrame {
         
         JMenu actionmenu = new JMenu("Actions");
         renewallmenu = new JMenuItem("Renew All");
-        renewallmenu.setEnabled(false);
+        //renewallmenu.setEnabled(false);
         
         renewallmenu.addActionListener(new ActionListener(){
             @Override
@@ -245,11 +262,10 @@ public class MainFrame extends JFrame {
         autorenewmenu.addActionListener(new ActionListener(){
             @Override
             public void actionPerformed(ActionEvent ae){
-                AutoRenewUI autoRenewUI = AutoRenewUI.getInstance(MainFrame.this);
-                autoRenewUI.setVisible(true);
+               new AutoRenewUI(MainFrame.this);
             }
         });
-        autorenewmenu.setEnabled(false);
+        //autorenewmenu.setEnabled(false);
         
         
         JMenuItem exit = new JMenuItem("Exit");
@@ -296,7 +312,7 @@ public class MainFrame extends JFrame {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                doRenew((Ad)listview.getSelectedValue());
+                doRenew(listview.getSelectedValue());
             }
 
         });
@@ -315,7 +331,7 @@ public class MainFrame extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if(listview.getSelectedValue()!=null){
-                    doDelete((Ad)listview.getSelectedValue());
+                    doDelete(listview.getSelectedValue());
                 }else{
                     JOptionPane.showMessageDialog(MainFrame.this, "You have to select an ad first");
                 }
@@ -397,6 +413,7 @@ public class MainFrame extends JFrame {
 
                     }else{
                         if(!store.hasRenewable()){
+                            busywindow.dispose();
                             JOptionPane.showMessageDialog(MainFrame.this, "No ads exists to renew.");
                         }else{
                             store.renewAll();
@@ -434,6 +451,7 @@ public class MainFrame extends JFrame {
                 }
                 
                 if(didRenewall==true){
+                    
                     JOptionPane.showMessageDialog(MainFrame.this, "All ads have now been renewed");
                 }
                 

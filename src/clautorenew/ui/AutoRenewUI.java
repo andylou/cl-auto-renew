@@ -4,24 +4,23 @@
  */
 package clautorenew.ui;
 
-import clautorenew.conf.AutoRenew;
+import clautorenew.ad.AccountUpdate;
+import clautorenew.conf.Configuration;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.EOFException;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Properties;
-import java.util.Timer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import net.miginfocom.swing.MigLayout;
@@ -31,84 +30,115 @@ import net.miginfocom.swing.MigLayout;
  * @author Hermoine
  */
 public class AutoRenewUI extends JDialog {
-    private static final long serialVersionUID = 1L;
-    private static JComboBox<Integer> frequencyBox;
-    private static JCheckBox enableRenew;
-    private static Timer renewTimer = null;
-    private static Properties props = new Properties();
-    private static File propfile = new File("conf.properties");
-    private static AutoRenewUI autoRenewUI;
-    private AutoRenewUI(JFrame parent){
-        
-        setLayout(new MigLayout("wrap 3"));
+    private static final long serialVersionUID = 11200L;
+    public AutoRenewUI(JFrame parent){
+        final Configuration config = Configuration.getInstance();
         try {
-            props.load(new FileReader(propfile));
-        } catch (IOException ex) {
+            config.loadInterval();
+        } catch(EOFException e){
+            //do nothing for end of file exceptions
+        } catch (IOException ex ) {
+            Logger.getLogger(AutoRenewUI.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ClassNotFoundException ex) {
             Logger.getLogger(AutoRenewUI.class.getName()).log(Level.SEVERE, null, ex);
         }
-        enableRenew = new JCheckBox("Enable Auto Renew");
-        //load state from property file
-        enableRenew.setSelected(props.getProperty("autorenew").equals("true")?true:false);
-        enableRenew.addActionListener(new ActionListener() {
+        setLayout(new MigLayout("wrap 2"));
+        
+        add(new JLabel("Select interval to auto renew ads: "),"span 2");
+        final JTextField timetxt = new JTextField(15);
+        timetxt.setText(""+config.getTime());
+        
+        final JComboBox<String> timeunitcbox = new JComboBox<>(new String[]{"Seconds","Minutes","Hours"});
+        timeunitcbox.setSelectedItem(config.getTimeunit());
+        
+        final JCheckBox renewbox = new JCheckBox("Enable Auto-renew");
+        renewbox.setSelected(config.isAutorenew());
+        if(config.isAutorenew()){
+            timetxt.setEnabled(true);
+            timeunitcbox.setEnabled(true);
+        }else{
+            timetxt.setEnabled(false);
+            timeunitcbox.setEnabled(false);
+        }
+        renewbox.addChangeListener(new ChangeListener() {
+
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if(renewbox.isSelected()){
+                    timetxt.setEnabled(true);
+                    timeunitcbox.setEnabled(true);
+                }else{
+                    timetxt.setEnabled(false);
+                    timeunitcbox.setEnabled(false);
+                }
+            }
+        });
+        
+        renewbox.addActionListener(new ActionListener(){
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                enableAction(enableRenew.isSelected(),
-                        Integer.parseInt(props.getProperty("interval")));
+                if(config.getAccounts().size()==0){
+                    JOptionPane.showMessageDialog(AutoRenewUI.this, "There are no are accounts to auto-renew. please add an account first");
+                    renewbox.setSelected(false);
+                    timetxt.setEnabled(false);
+                    timeunitcbox.setEnabled(false);
+                }
             }
-           
-        });
-        add(enableRenew,"span 3");
         
-        frequencyBox = new JComboBox<>(new Integer[]{1,2,3,4,5});
-        frequencyBox.setSelectedItem(new Integer(Integer.parseInt(props.getProperty("interval"))));
-        add(new JLabel("Frequency"));
-        add(frequencyBox);
-        add(new JLabel("hour(s)"));
+        });
+        
+        
+        add(renewbox,"wrap");
+        add(timetxt);
+        add(timeunitcbox);
+        
+        JButton savebtn = new JButton("Save");
+        savebtn.addActionListener(new ActionListener(){
+            @Override
+            public void actionPerformed(ActionEvent ae){
+                boolean isrenew = renewbox.isSelected();
+                if(isrenew){
+                    config.setAutorenew(true);
+                    config.setTime(Integer.parseInt(timetxt.getText()));
+                    config.setTimeunit((String) timeunitcbox.getSelectedItem());
+                    try {
+                        config.saveInterval();
+                    } catch (FileNotFoundException ex) {
+                        Logger.getLogger(AutoRenewUI.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (IOException ex) {
+                        Logger.getLogger(AutoRenewUI.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    AccountUpdate updates = AccountUpdate.getInstance();
+                    updates.beginAutoRenew(Integer.parseInt(timetxt.getText()), (String) timeunitcbox.getSelectedItem());
+                    dispose();
+                }else{
+                    try {
+                        config.setAutorenew(false);
+                        config.saveInterval();
+                    } catch (FileNotFoundException ex) {
+                        Logger.getLogger(AutoRenewUI.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (IOException ex) {
+                        Logger.getLogger(AutoRenewUI.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    AccountUpdate updates = AccountUpdate.getInstance();
+                    updates.cancelAutorenew();
+                    dispose();
+                }
+            }
+        });
+        add(savebtn);
+        
+        
         
         setSize(300,150);
         setLocationRelativeTo(parent);
-        setVisible(false);
+        setVisible(true);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         
     }
-    public static AutoRenewUI getInstance(JFrame parent){
-        if(autoRenewUI==null){
-            autoRenewUI = new AutoRenewUI(parent);
-        }
-        return autoRenewUI;
-    }
+    
     public static void main(String args[]){
-        //AutoRenewUI.display(null);
+        new AutoRenewUI(null);
     }
-    public static void enableAction(boolean selected, int interval){
-        if(selected){
-            if(renewTimer!=null){
-                System.out.println("Cancelled current running...");
-                renewTimer.cancel();
-            }
-            renewTimer = new Timer();
-            System.out.println("Scheduling new one ...");
-            renewTimer.schedule(new AutoRenew(), 3000, 1000);
-            props.setProperty("autorenew", "true");
-            props.setProperty("interval", ""+interval);
-            
-        }else{
-            if(renewTimer!=null){
-                renewTimer.cancel();
-                System.out.println("Cancelled current running");
-            }
-            renewTimer = null;
-            props.setProperty("autorenew", "false");
-            frequencyBox.setEnabled(false);
-        }
-        //save state
-        try {
-            props.store(new FileWriter(propfile), null);
-        } catch (IOException ex) {
-            Logger.getLogger(AutoRenewUI.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-    
-    
 }

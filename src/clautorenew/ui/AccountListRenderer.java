@@ -1,7 +1,7 @@
 
 package clautorenew.ui;
 
-import clautorenew.ad.Ad;
+import clautorenew.conf.Account;
 import java.awt.Component;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JLabel;
@@ -14,20 +14,21 @@ import javax.swing.border.EmptyBorder;
  *
  * @author Hermoine
  */
-public class AdListRenderer implements ListCellRenderer<Ad>{
+public class AccountListRenderer implements ListCellRenderer<Account>{
     protected static Border noFocusBorder = new EmptyBorder(15, 1, 1, 1);
 
     protected DefaultListCellRenderer defaultRenderer = new DefaultListCellRenderer();
     @Override
-    public Component getListCellRendererComponent(JList<? extends Ad> list, final Ad value, int index, boolean isSelected, boolean cellHasFocus) {
+    public Component getListCellRendererComponent(JList<? extends Account> list, final Account value, int index,
+            boolean isSelected, boolean cellHasFocus) {
         JLabel renderer = (JLabel) defaultRenderer.getListCellRendererComponent(list, value, index,
-        isSelected, cellHasFocus);
+            isSelected, cellHasFocus);
         StringBuffer sb = new StringBuffer();
         sb.append("<html><div><b>")
-                .append(value.getTitle())
+                .append(value.getAccountName())
                 .append("</b><br/>")
                 .append("<small>")
-                .append(value.getStatus())
+                .append(value.getEmail())
                 .append("</small>")
                 .append("</div></html>");
         renderer.setText(sb.toString());

@@ -2,6 +2,10 @@
 package clautorenew;
 
 import clautorenew.ui.MainFrame;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 
 
@@ -15,13 +19,22 @@ final public class CLAutoRenew {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-       // new HttpClientDemo();
-        
-        new MainFrame();
-        
-        //Timer autorenew = new Timer(true);
-        //autorenew.schedule(new AutoRenew(), 1000, 2000);
-        
+        SwingUtilities.invokeLater(new Runnable(){
+                    @Override
+                    public void run(){
+                        try{
+                            UIManager.setLookAndFeel("com.sun.java.swing.plaf.nimbus.NimbusLookAndFeel");
+                        }catch(Exception ex){
+                            try {
+                                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                            } catch (Exception ex1) {
+                                Logger.getLogger(CLAutoRenew.class.getName()).log(Level.SEVERE, null, ex1);
+                            } 
+                        }
+                        new MainFrame();
+                        
+                    }
+                });
         
         
         
