@@ -14,7 +14,7 @@ import javax.swing.DefaultListModel;
  * @author Hermoine
  */
 public class AdTaskImpl implements Task {
-    private static final int PERIOD = 3;
+    private static final long serialVersionUID = 13L;
     private Account account;
     public AdTaskImpl(Account account){
         this.account = account;

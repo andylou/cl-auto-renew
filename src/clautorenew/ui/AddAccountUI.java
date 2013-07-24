@@ -4,8 +4,8 @@
  */
 package clautorenew.ui;
 
-import clautorenew.ad.AccountTaskImpl;
 import clautorenew.ad.AccountUpdate;
+import clautorenew.ad.AccountUtil;
 import clautorenew.ad.AdsStore;
 import clautorenew.conf.Account;
 import clautorenew.conf.Configuration;
@@ -91,13 +91,12 @@ public class AddAccountUI extends JDialog {
                             account = new Account(email, password, name, true);
                             account.setStore(store);
                             
+                            AccountUtil acutil = new AccountUtil();
+                            acutil.fetchAds(account);
+                            
                             //persist new account on file system
                             Configuration config = Configuration.getInstance();
                             config.addAccount(account);
-                            config.save();//TODO : this is not saving yet
-                            
-                            AccountTaskImpl accountTaskImpl = new AccountTaskImpl(account);
-                            accountTaskImpl.fetchUpdate();
                             
                             parent.addAccount(account);
                             AccountUpdate updates = AccountUpdate.getInstance();

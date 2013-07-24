@@ -63,24 +63,22 @@ public class Configuration {
     }
     
     public synchronized void save() throws IOException{
-        
-        ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream("conf.dat"));
-        os.writeObject(accounts);
-        os.flush();
-        os.close();    
+        try (ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream("conf.dat"))) {
+            os.writeObject(accounts);
+            os.flush();
+        }    
         
     }
-    public void load() throws IOException, ClassNotFoundException{
+    @SuppressWarnings("unchecked")
+    private void load() throws IOException, ClassNotFoundException{
         accounts = new DefaultListModel<>();
         File f = new File("conf.dat");
         if(!f.exists()){
             f.createNewFile();
         }
-        
-        ObjectInputStream is = new ObjectInputStream(new FileInputStream("conf.dat"));
-        accounts = (DefaultListModel<Account>) is.readObject();
-        
-        is.close();
+        try (ObjectInputStream is = new ObjectInputStream(new FileInputStream("conf.dat"))) {
+            accounts = (DefaultListModel<Account>) is.readObject();
+        }
         
     }
     public void loadInterval() throws IOException, ClassNotFoundException{
@@ -88,21 +86,20 @@ public class Configuration {
         if(!f.exists()){
             f.createNewFile();
         }
-        
-        ObjectInputStream is = new ObjectInputStream(new FileInputStream("exad.dat"));
-        autorenew = is.readBoolean();
-        time = is.readInt();
-        timeunit = (String)is.readObject();
-        is.close();
+        try (ObjectInputStream is = new ObjectInputStream(new FileInputStream("exad.dat"))) {
+            autorenew = is.readBoolean();
+            time = is.readInt();
+            timeunit = (String)is.readObject();
+        }
         
     }
     public void saveInterval() throws FileNotFoundException, IOException{
-        ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream("exad.dat"));
-        os.writeBoolean(autorenew);
-        os.writeInt(time);
-        os.writeObject(timeunit);
-        os.flush();
-        os.close();
+        try (ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream("exad.dat"))) {
+            os.writeBoolean(autorenew);
+            os.writeInt(time);
+            os.writeObject(timeunit);
+            os.flush();
+        }
     }
     public DefaultListModel<Account> getAccounts() {
         return accounts;

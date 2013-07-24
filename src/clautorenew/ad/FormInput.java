@@ -11,7 +11,7 @@ public class FormInput implements Serializable {
     private String name;
     private String type;
     private String value;
-
+    private static final long serialVersionUID = 50L;
     public String getName() {
         return name;
     }

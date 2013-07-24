@@ -20,7 +20,7 @@ import javax.swing.DefaultListModel;
  */
 public class AccountUpdate implements Serializable{
     private static ScheduledThreadPoolExecutor pool;
-    private boolean isStarted=false;
+    private static final long serialVersionUID = 90L;
     private Map<Account, ScheduledFuture<?>> scheduledAccounts;
     private Map<Account, ScheduledFuture<?>> scheduledAd;
     private final static int DELAY= 0;
@@ -75,7 +75,9 @@ public class AccountUpdate implements Serializable{
     }
     public void cancelAutorenew(){
         for(ScheduledFuture<?> f: scheduledAd.values()){
-            f.cancel(true);
+            if(f!=null){
+                f.cancel(true);
+            }
         }
         scheduledAd.clear();
     }
@@ -87,8 +89,12 @@ public class AccountUpdate implements Serializable{
     public void remove(Account account){
         ScheduledFuture<?> ac_future = scheduledAccounts.get(account);
         ScheduledFuture<?> ad_future = scheduledAccounts.get(account);
-        ac_future.cancel(true);
-        ad_future.cancel(true);
+        if(ac_future!=null){
+            ac_future.cancel(true);
+        }
+        if(ad_future!=null){
+            ad_future.cancel(true);
+        }
         scheduledAccounts.remove(account);
         scheduledAd.remove(account);
     }

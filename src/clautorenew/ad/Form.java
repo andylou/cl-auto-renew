@@ -13,7 +13,7 @@ public class Form implements Serializable{
     private String action;
     private String actionType;
     private ArrayList<FormInput> inputsElements = new ArrayList();
-
+    private static final long serialVersionUID = 40L;
     public String getMethod() {
         return method;
     }

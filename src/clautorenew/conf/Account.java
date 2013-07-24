@@ -13,12 +13,12 @@ import java.util.Objects;
  * @author Hermoine
  */
 public class Account implements Serializable {
-    
+    private static final long serialVersionUID = 20L;
     private String email;
     private String password;
     private String accountName;
     private boolean autorenewAll;
-    private int interval =60* 1000;
+    private int interval = 60 * 1000;
     private AdsStore store = new AdsStore();
     public Account(String email, String password, String accountName, boolean autorenewAll) {
         this.email = email;

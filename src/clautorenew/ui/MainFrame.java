@@ -46,6 +46,7 @@ public class MainFrame extends JFrame {
     private boolean didDelete;
     private boolean didRenewall;
     private JList<Account> accountlist;
+    private static JLabel statuslbl;
     protected DefaultListModel<Account> accountmodel;
     public MainFrame(){
         initUI();
@@ -69,6 +70,8 @@ public class MainFrame extends JFrame {
         add(splitpane);
         splitpane.setDividerLocation(250);
         splitpane.setDividerSize(5);
+        
+        add(statusPanel(),BorderLayout.SOUTH);
         setTitle("CraigsList Auto Renew");
         setSize(620,700);
         setLocationRelativeTo(null);
@@ -105,7 +108,18 @@ public class MainFrame extends JFrame {
         
         
     }
+    public JPanel statusPanel(){
+        JPanel panel = new JPanel();
+        panel.setLayout(new FlowLayout(FlowLayout.LEFT));
+        statuslbl = new JLabel("Status");
+        panel.add(statuslbl);
+        
+        return panel;
+    }
     
+    public static void setStatus(String msg){
+        statuslbl.setText(msg);
+    }
     protected JPanel createSidePane(){
         JPanel panel = new JPanel();
         panel.setLayout(new BorderLayout());

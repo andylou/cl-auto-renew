@@ -5,12 +5,9 @@
 package clautorenew.ad;
 
 import clautorenew.conf.Account;
-import clautorenew.conf.Configuration;
-import clautorenew.ui.MainFrame;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.DefaultListModel;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -26,25 +23,26 @@ public class AccountTaskImpl implements Task {
         this.account = account;
     }
     public void fetchUpdate() throws IOException{
-        String url = "https://accounts.craigslist.org";
+        try{
+            String url = "https://accounts.craigslist.org";
     
-        AdsStore store = account.getStore();
-        
-        DefaultHttpClient httpclient = store.getHttpClientInstance();
-        HttpGet getrequest = new HttpGet(url);
+            AdsStore store = account.getStore();
 
-        HttpResponse response = httpclient.execute(getrequest);
-        HttpEntity entity = response.getEntity();
-        
-        store.processStream(entity.getContent(), "iso-8859-1",url);
-        Configuration.getInstance().save();
-        
-        
+            DefaultHttpClient httpclient = store.getHttpClientInstance();
+            HttpGet getrequest = new HttpGet(url);
+
+            HttpResponse response = httpclient.execute(getrequest);
+            HttpEntity entity = response.getEntity();
+
+            store.processStream(entity.getContent(), "iso-8859-1",url);
+        }catch(Exception ex){
+            ex.printStackTrace();
+        }
     } 
     @Override
     public void run() {
         try {
-            fetchUpdate();
+            this.fetchUpdate();
         } catch (IOException ex) {
             Logger.getLogger(AccountTaskImpl.class.getName()).log(Level.SEVERE, null, ex);
         }

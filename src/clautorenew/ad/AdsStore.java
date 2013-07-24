@@ -1,7 +1,7 @@
 
 package clautorenew.ad;
 
-import clautorenew.conf.Account;
+import clautorenew.ui.MainFrame;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -38,7 +38,7 @@ import org.jsoup.select.Elements;
  */
 
 public class AdsStore implements Serializable {
-    private static final long serialVersionUID = 13552L;
+    private static final long serialVersionUID = 10L;
     private CookieStore cookiestore;
     DefaultListModel<Ad> adModel;
     public AdsStore(){
@@ -54,84 +54,86 @@ public class AdsStore implements Serializable {
     }
     
     //parse html crawled from listings page
-    protected DefaultListModel<Ad> processStream(InputStream inputStream, String charset, String url) throws IOException{
+    protected void processStream(InputStream inputStream, String charset, String url) throws IOException{
         DefaultListModel<Ad> model = new DefaultListModel<>();
         Document doc = Jsoup.parse(inputStream,charset, url);
         
         Elements m_body = doc.getElementsByAttributeValue("summary", "postings");
         
-        Elements children = m_body.get(0).children().get(0).children();
+        if(!m_body.isEmpty()){
+            Elements children = m_body.get(0).children().get(0).children();
         
-        int i =0;
-        for (Iterator<Element> it = children.iterator(); it.hasNext();) {
-            Element e = it.next();
-            if(i!=0){
-                String status = e.select("td[class=status]").text();
-                if((!status.contains("Deleted")) && (!status.contains("Expired"))){
-                    Ad ad = new Ad();
-                    ad.setStatus(status);
-                    ad.setTitle(e.select("td[class=title]").text());
-                    ad.setUrl(e.select("td[class=title]").select("a").attr("href"));
+            int i =0;
+            for (Iterator<Element> it = children.iterator(); it.hasNext();) {
+                Element e = it.next();
+                if(i!=0){
+                    String status = e.select("td[class=status]").text();
+                    if((!status.contains("Deleted")) && (!status.contains("Expired"))){
+                        Ad ad = new Ad();
+                        ad.setStatus(status);
+                        ad.setTitle(e.select("td[class=title]").text());
+                        ad.setUrl(e.select("td[class=title]").select("a").attr("href"));
 
-                    Elements actions = e.select("form");
+                        Elements actions = e.select("form");
 
-                    //split actions to its different types
-                    if(actions != null && actions.size()>0){
-                        //process button actions on ads
+                        //split actions to its different types
+                        if(actions != null && actions.size()>0){
+                            //process button actions on ads
 
-                        ArrayList<Form> buttons = new ArrayList();
-                        for(Element formElement: actions){
-                            Form form = new Form();
-                            form.setAction(formElement.attr("action"));
-                            form.setMethod(formElement.attr("method"));
+                            ArrayList<Form> buttons = new ArrayList();
+                            for(Element formElement: actions){
+                                Form form = new Form();
+                                form.setAction(formElement.attr("action"));
+                                form.setMethod(formElement.attr("method"));
 
-                            Elements formChildren = formElement.children();
-                            //loop through input elements
-                            for(Element input :formChildren){
-                                FormInput formInput = new FormInput();
+                                Elements formChildren = formElement.children();
+                                //loop through input elements
+                                for(Element input :formChildren){
+                                    FormInput formInput = new FormInput();
 
-                                //parse the input elements used as buttons/ actions on CL;
-                                String name = input.attr("name");
-                                String type = input.attr("type");
-                                String value = input.attr("value");        
+                                    //parse the input elements used as buttons/ actions on CL;
+                                    String name = input.attr("name");
+                                    String type = input.attr("type");
+                                    String value = input.attr("value");        
 
-                                formInput.setName(name);
-                                formInput.setType(type);
-                                formInput.setValue(value);
+                                    formInput.setName(name);
+                                    formInput.setType(type);
+                                    formInput.setValue(value);
 
-                                //set the form type
-                                if(type.equals("submit")){
-                                    form.setActionType(formInput.getValue());
+                                    //set the form type
+                                    if(type.equals("submit")){
+                                        form.setActionType(formInput.getValue());
+                                    }
+
+                                    if(value.contains("renew")){
+                                        ad.setStatus("Inactive");
+                                    }
+
+                                    form.addInputElement(formInput);
                                 }
 
-                                if(value.contains("renew")){
-                                    ad.setStatus("Inactive");
-                                }
+                                buttons.add(form);
 
-                                form.addInputElement(formInput);
                             }
-
-                            buttons.add(form);
+                            ad.setActions(buttons);
 
                         }
-                        ad.setActions(buttons);
 
-                    }
+    //                    if(!listings.contains(ad)){
+    //                        listings.add(0,ad);
+    //                    }
 
-//                    if(!listings.contains(ad)){
-//                        listings.add(0,ad);
-//                    }
-                    
-                    if(!model.contains(ad)){
-                        model.add(0, ad);
+                        if(!model.contains(ad)){
+                            model.add(0, ad);
+                        }
                     }
                 }
+                i++;    
+
             }
-            i++;    
-             
         }
         setModel(model);
-        return model;
+        //return model;
         
     }
     
@@ -164,52 +166,7 @@ public class AdsStore implements Serializable {
        
         for(int i=0;i<adModel.size();i++){
             Ad ad = adModel.get(i);
-            ArrayList<Form> forms = ad.getActions();
-            
-            for(Form f: forms){
-                if(f.getActionType().equals("renew")){
-                    DefaultHttpClient httpclient = this.getHttpClientInstance();
-                    
-                    HttpContext localContext = new BasicHttpContext();
-                    String action = f.getAction();
-                    String method = f.getMethod();
-                    int statusCode = 404;
-                    if(method.equalsIgnoreCase("post")){
-                        
-                        HttpPost httpost = new HttpPost(action);
-                        List <NameValuePair> nvps = new ArrayList <>();
-                        
-                        for(FormInput finput: f.getInputsElements()){
-                            if(!finput.getType().equals("submit"))
-                                nvps.add(new BasicNameValuePair(finput.getName(), finput.getValue()));
-                        }
-                        
-                        httpost.setEntity(new UrlEncodedFormEntity(nvps));
-                        HttpResponse response = httpclient.execute(httpost, localContext);
-                        statusCode = response.getStatusLine().getStatusCode();
-                        //System.out.println("POST: " +response.getStatusLine());
-
-                    }else{
-                        URIBuilder uriBuilder = new URIBuilder(action);
-                        for(FormInput finput: f.getInputsElements()){
-                            uriBuilder.addParameter(finput.getName(), finput.getValue());
-                        }
-                        
-                        HttpGet httpget = new HttpGet(uriBuilder.build());
-                        HttpResponse response = httpclient.execute(httpget, localContext);
-                        statusCode = response.getStatusLine().getStatusCode();
-                       // System.out.println("GET: " +response.getStatusLine());
-                    }
-                    if(statusCode == 200){
-                            
-                         adModel.get(adModel.indexOf(ad)).setStatus("Active");
-                         //listings.get(listings.indexOf(ad)).setStatus("Active");
-                            
-                    }
-                    httpclient.getConnectionManager().shutdown();
-                        
-                }
-            }
+            renew(ad);
             
         }
     }
@@ -239,6 +196,7 @@ public class AdsStore implements Serializable {
 
         for(Form f: forms){
             if(f.getActionType().equals("renew")){
+                MainFrame.setStatus("Renewing ad: "+ad.getTitle());
                 DefaultHttpClient httpclient = this.getHttpClientInstance();
 
                 HttpContext localContext = new BasicHttpContext();
@@ -277,7 +235,7 @@ public class AdsStore implements Serializable {
                         
                 }
                 httpclient.getConnectionManager().shutdown();
-
+                MainFrame.setStatus("Status");
             }
         }
     }

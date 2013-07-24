@@ -14,7 +14,7 @@ public class Ad implements Serializable {
     private ArrayList<Form> actions;
     private String url;
     private String title;
-
+    private static final long serialVersionUID = 30L;
     public String getStatus() {
         return status;
     }
