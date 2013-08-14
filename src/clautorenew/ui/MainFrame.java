@@ -48,8 +48,17 @@ public class MainFrame extends JFrame {
     private JList<Account> accountlist;
     private static JLabel statuslbl;
     protected DefaultListModel<Account> accountmodel;
-    public MainFrame(){
+    private static MainFrame mf;
+    
+    private MainFrame(){
         initUI();
+    }
+    public static MainFrame getInstance(){
+        if(mf == null){
+            mf = new MainFrame();
+        }
+        
+        return mf;
     }
     public void initUI(){
         accountmodel = new DefaultListModel<>();
@@ -472,7 +481,10 @@ public class MainFrame extends JFrame {
             }
             
         }
-    
+    public void refresh(){
+        this.repaint();
+        this.revalidate();
+    }
     public static void main(String args[]){
         MainFrame mainFrame = new MainFrame();
     }

@@ -24,16 +24,16 @@ public class AccountTaskImpl implements Task {
     }
     public void fetchUpdate() throws IOException{
         try{
-            String url = "https://accounts.craigslist.org";
+            String url = "https://accounts.craigslist.org/";
     
             AdsStore store = account.getStore();
-
+            System.out.println("Updating account: "+account.getAccountName());
             DefaultHttpClient httpclient = store.getHttpClientInstance();
             HttpGet getrequest = new HttpGet(url);
 
             HttpResponse response = httpclient.execute(getrequest);
             HttpEntity entity = response.getEntity();
-
+            
             store.processStream(entity.getContent(), "iso-8859-1",url);
         }catch(Exception ex){
             ex.printStackTrace();

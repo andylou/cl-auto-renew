@@ -134,7 +134,7 @@ public class AdsStore implements Serializable {
         }
         setModel(model);
         //return model;
-        
+        MainFrame.getInstance().refresh();
     }
     
     public DefaultListModel<Ad> getAdModel() {

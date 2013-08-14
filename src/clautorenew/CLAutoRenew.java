@@ -31,7 +31,7 @@ final public class CLAutoRenew {
                                 Logger.getLogger(CLAutoRenew.class.getName()).log(Level.SEVERE, null, ex1);
                             } 
                         }
-                        new MainFrame();
+                        MainFrame.getInstance();
                         
                     }
                 });
